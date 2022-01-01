@@ -31,7 +31,8 @@ const kakao = {
         clientID: '51e4976c7ef7df823c92663cdaef6fbc',
         clientSecret: 'pSgJYbhkgNFdAkZZ0R2jfM4QxBUS7XQQ',
         //redirectUri: 'https://comeon-yo.herokuapp.com/auth/kakao/callback'
-        redirectUri: 'https://comeon-yo.herokuapp.com//auth/kakao/callback'
+        redirectUri: 'http://localhost:3000/auth/kakao/callback',
+        logoutRedirectUri: 'http://localhost:3000/auth/kakao/logout',
     }
     //profile account_email
 app.get('/auth/kakao', (req, res) => {
@@ -100,92 +101,34 @@ app.get('/login', (req, res) => {
     res.render('auth/index');
 });
 
+app.get('/logout', async(req, res) => {
+    let logout;
+    try {
+        logout = await axios({
+            method: 'get',
+            url: 'https://kauth.kakao.com/oauth/logout?client_id='+kakao.clientID+'&logout_redirect_uri='+kakao.logoutRedirectUri,
+        })
+    } catch (e) {
+        res.json(e.data);
+    }
+    console.log(logout);
+    req.session.destroy();
+
+});
+
+app.get('/auth/kakao/logout', async(req, res) => {
+   
+    console.log('logout!!!!!!');
+
+
+})
+
+
 app.get(kakao.redirectUri)
 
-
+app.get("/legal", (req, res) => res.sendFile(path.join(__dirname, "www/legal.html")));
 
 // Get PORT from env variable else assign 3000 for development
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, null, () => console.log("Listening on port " + PORT));
 
-app.get("/legal", (req, res) => res.sendFile(path.join(__dirname, "www/legal.html")));
-
-// All URL patterns should served with the same file.
-app.get(["/", "/:room"], (req, res) => {
-    res.sendFile(path.join(__dirname, "www/room.html"));
-});
-
-const channels = {};
-const sockets = {};
-
-io.sockets.on("connection", (socket) => {
-    const socketHostName = socket.handshake.headers.host.split(":")[0];
-
-    socket.channels = {};
-    sockets[socket.id] = socket;
-
-    console.log("[" + socket.id + "] connection accepted");
-    socket.on("disconnect", () => {
-        for (const channel in socket.channels) {
-            part(channel);
-        }
-        console.log("[" + socket.id + "] disconnected");
-        delete sockets[socket.id];
-    });
-
-    socket.on("join", (config) => {
-        console.log("[" + socket.id + "] join ", config);
-        const channel = socketHostName + config.channel;
-
-        // Already Joined
-        if (channel in socket.channels) return;
-
-        if (!(channel in channels)) {
-            channels[channel] = {};
-        }
-
-        for (const id in channels[channel]) {
-            channels[channel][id].emit("addPeer", { peer_id: socket.id, should_create_offer: false });
-            socket.emit("addPeer", { peer_id: id, should_create_offer: true });
-        }
-
-        channels[channel][socket.id] = socket;
-        socket.channels[channel] = channel;
-    });
-
-    const part = (channel) => {
-        // Socket not in channel
-        if (!(channel in socket.channels)) return;
-
-        delete socket.channels[channel];
-        delete channels[channel][socket.id];
-
-        for (const id in channels[channel]) {
-            channels[channel][id].emit("removePeer", { peer_id: socket.id });
-            socket.emit("removePeer", { peer_id: id });
-        }
-    };
-
-    socket.on("relayICECandidate", (config) => {
-        let peer_id = config.peer_id;
-        let ice_candidate = config.ice_candidate;
-        console.log("[" + socket.id + "] relay ICE-candidate to [" + peer_id + "] ", ice_candidate);
-
-        if (peer_id in sockets) {
-            sockets[peer_id].emit("iceCandidate", { peer_id: socket.id, ice_candidate: ice_candidate });
-        }
-    });
-
-    socket.on("relaySessionDescription", (config) => {
-        let peer_id = config.peer_id;
-        let session_description = config.session_description;
-        console.log("[" + socket.id + "] relay SessionDescription to [" + peer_id + "] ", session_description);
-
-        if (peer_id in sockets) {
-            sockets[peer_id].emit("sessionDescription", {
-                peer_id: socket.id,
-                session_description: session_description,
-            });
-        }
-    });
-});

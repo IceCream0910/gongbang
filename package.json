@@ -1,11 +1,12 @@
 {
-    "name": "hi",
+    "name": "gongbang",
     "version": "2.0.4",
     "homepage": "https://github.com/vasanthv/talk#readme",
-    "description": "들어와라",
+    "description": "gongbang",
     "main": "server.js",
     "scripts": {
-        "test": "echo \"Error: no test specified\" && exit 1"
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "node server.js"
     },
     "repository": {
         "type": "git",

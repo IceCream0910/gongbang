@@ -5,120 +5,440 @@
     <script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
     <script src="https://www.gstatic.com/firebasejs/4.11.0/firebase.js"></script>
-    <script src="js/main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.18.0/moment.min.js"></script>
+    <script src="js/todo.js" defer></script>
+
+    <script src="https://unpkg.com/vue@next"></script>
+
+    <link rel="stylesheet" href="css/todo.css" />
     <link rel="stylesheet" href="css/main.css" />
+
+
     <script type="module" src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@5.5.2/dist/ionicons/ionicons.js"></script>
-
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
 </head>
 
 <body>
+    <!-- main -->
+    <div id="main">
+        <header>
+            <h3><span id="nickname-hello" class="highlight"></span>, 오늘도 열심히 공부해볼까?<br> 오늘 체크리스트의 <span id="today-progress" class="highlight"></span>를 완료했어!</h3>
+        </header>
+
+        <div class="calendar">
+
+        </div>
 
 
-    <div class="msg animate slide-in-down"></div>
-    <br>
-    <h3 id="today_stimeFull">오늘 나는<br><span class="time_text" id="today_stime"></span> 공부했어요.</h3>
+        <div class="container">
 
-    <br><br>
-    <h5>
-        <ion-icon name="people-outline"></ion-icon>&nbsp;&nbsp;친구는 오늘 얼마나 했는지 볼까요?</h5><br>
+            <div class="cards">
+                <div class="card-item">
+                    <div class="card-info">
+                        <h2 class="card-title">체크리스트</h2>
+                        <div id="app" class="flex justify-evenly py-8">
+                            <div class="w">
+                                <div class="flex h-12">
+                                    <input type="text" v-model="newTodo" placeholder="체크리스트 항목 입력" class="border border-blue-200 box-border rounded-md h-full text-md p-4 text-gray-800 outline-none focus:border-blue-400 w-full" @keydown.enter="addTodo()">
+                                    <span class="text-white rounded-md ml-4 h-full bg-blue-300 flex justify-center items-center px-3 cursor-pointer hover:bg-blue-400" @click="addTodo()">
+                                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                  </svg>
+                                </span>
+                                </div>
 
-    <div class="userlist"></div>
-    <canvas class="orb-canvas"></canvas>
-    <br><br>
+                                <ul v-if="todoList.length > 0" class="overflow-hidden rounded-md my-4 space-y-reverse space-y-1 flex flex-col-reverse">
+                                    <li v-for="todo in todoList" :key="todo.id" class="py-3 px-4 flex items-center" :class="{'bg-red-100': !todo.completed, 'bg-green-100': todo.completed}">
+                                        <div class="flex-1 flex items-center">
+                                            <input type="checkbox" class="cursor-pointer" v-model="todo.completed">
+                                            <input @keydown.enter="editMode(todo)" @dblclick="editMode(todo)" class="w-full border-b cursor-pointer bg-transparent border-transparent ml-2 mr-4 px-2 py-1 outline-none" type="text" v-model="todo.text" :class="{'border-white cursor-text': todo.edit}"
+                                                :readonly="!todo.edit" style="word-wrap:break-word;">
+                                        </div>
+                                        <span @click="deleteTodo(todo)" class="text-red-500 cursor-pointer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                  </span>
+                                    </li>
+                                </ul>
+                                <div v-if="todoList.length == 0" class="mt-4 bg-yellow-100 border-t border-b border-yellow-500 text-yellow-700 px-4 py-3" role="alert">
+                                    <p class="font-bold">아무것도 없어요 :(</p>
+                                    <p class="text-sm">아무것도 하지 않으면 아무 일도 일어나지 않는다.<br>-기시미 이치로
+                                        <p>
+                                </div>
 
-    <div class="overlay__btns">
-        <input type="text" id="roomID" placeholder="회의 ID" maxlength="6">
-        <button onclick="javascript:startMeet();" class="overlay__btn overlay__btn--transparent" style="border-radius:0 0.5rem 0.5rem 0;border-left:none;width:30%;">참가</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="cards">
+                <div class="card-item">
+                    <div class="card-info">
+                        <h2 class="card-title"><span class="highlight">다른 친구들</span>은 얼마나<br>했는지 볼까요?</h2>
+                        <div id="friends-noneGroup" style="text-align: center;display:none;">
+                            <br><span>스터디그룹에 먼저 가입해주세요.</span><br><br>
+                        </div>
+                        <div id="friends-active" style="display:none;">
+                            <br><span>d</span><br><br>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <button class="overlay__btn overlay__btn--colors" style="margin-top:10px;" onclick="javascript:newMeet(); ">
-<span>새 스터디룸 생성</span>
+    <!-- main -->
 
-</button>
+    <!-- community -->
+    <div id="community" style="display: none;">
+        <header>
+            <div class="flex h-12">
+                <h3 style="width: 100%;">스터디그룹</h3>
+                <button onclick="javascript:firebase.database().ref('users/'+userid+'/joinedClub').set('none');" id="exitGroupFloatingButton" style="background-color: #bf3c41;margin-top:10px;width:130px;">그룹 나가기</button>
+                <span id="createGroupFloatingButton" onclick="javascript:$('#createGroup-modal-overlay, #createGroup-modal').addClass('active');clearAddGroupForm();" style="margin-top:20px;" class="text-white rounded-md ml-4 h-full bg-blue-500 flex justify-center items-center px-3 cursor-pointer hover:bg-blue-600">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </span>
+            </div>
+            <br>
+        </header>
 
+        <!-- modal -->
+        <div class="modal-overlay" id="createGroup-modal-overlay">
+            <div class="modal" id="createGroup-modal">
+
+                <a class="close-modal" href="javascript:$('#createGroup-modal-overlay, #createGroup-modal').removeClass('active');">
+                    <svg viewBox="0 0 20 20">
+          <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+        </svg>
+                </a>
+                <!-- close modal -->
+
+                <div class="modal-content">
+                    <h3 style="width: 100%;">스터디그룹 생성</h3>
+                    <Br>
+                    <div class="col-3 input-effect">
+                        <input class="effect-16" id="groupNameInput" type="text" placeholder="">
+                        <label>그룹 이름</label>
+                        <span class="focus-border"></span>
+                    </div>
+                    <br><br><br>
+                    <div class="col-3 input-effect">
+                        <input class="effect-16" id="groupDescriptionInput" type="text" placeholder="">
+                        <label>그룹 소개글</label>
+                        <span class="focus-border"></span>
+                    </div>
+                    <br><br><br>
+                    <div class="switch" onclick="javascript:publicSwitch();">
+                        <input type="checkbox" id="groupPublicInput" class="switch__input" disabled checked>
+                        <label for="switch1" class="switch__label">공개</label>
+                    </div>
+                    <br><br><br>
+                    <span id="error"></span><br>
+                    <button id="group-make-btn" onclick="javascript:addGroupBtn();">만들기</button>
+                </div>
+                <!-- content -->
+
+            </div>
+            <!-- modal -->
+        </div>
+        <!-- overlay -->
+
+        <div class="container">
+
+            <div id="groupScreen-noneGroup" style="display:none;width:100%;">
+                <div class="cards">
+                    <div class="card-item">
+                        <div class="card-info">
+                            <h3 class="card-title" style="font-size:18px;">비공개 그룹에 참여하려면<br>아래에 ID를 입력해보세요.</h3>
+                            <br>
+                            <div class="flex h-12">
+                                <input type="text" placeholder="그룹 ID" class="border border-blue-200 box-border rounded-md h-full text-md p-4 text-gray-800 outline-none focus:border-blue-400 w-full">
+                                <span class="text-white rounded-md ml-4 h-full bg-blue-500 flex justify-center items-center px-3 cursor-pointer hover:bg-blue-600">
+                            <ion-icon name="arrow-forward-outline"></ion-icon>
+                               </span>
+                            </div>
+                            <br>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div style="margin:1.5em;">
+                    <h4>아직 가입된 <span class="highlight">그룹이 없네요</span>?<br><span class="highlight">참여할 그룹</span>을 찾아봐요!</h4>
+                </div>
+
+                <div id="groupList">
+
+
+                </div>
+            </div>
+
+            <div id="groupScreen-active" style="display:none;">
+                <div style="margin:1.5em;">
+                    <h4><span id="groupPage-title" class="highlight"></span><br><span style="font-size:14px;" id="groupPage-description"></span></h4>
+                </div>
+                <br>
+            </div>
+
+        </div>
     </div>
+
+    <!-- 그룹 정보 modal -->
+    <div class="modal-overlay" id="groupInfo-modal-overlay">
+        <div class="modal" id="groupInfo-modal">
+
+            <a class="close-modal" href="javascript:$('#groupInfo-modal-overlay, #groupInfo-modal').removeClass('active');">
+                <svg viewBox="0 0 20 20">
+              <path fill="#000000" d="M15.898,4.045c-0.271-0.272-0.713-0.272-0.986,0l-4.71,4.711L5.493,4.045c-0.272-0.272-0.714-0.272-0.986,0s-0.272,0.714,0,0.986l4.709,4.711l-4.71,4.711c-0.272,0.271-0.272,0.713,0,0.986c0.136,0.136,0.314,0.203,0.492,0.203c0.179,0,0.357-0.067,0.493-0.203l4.711-4.711l4.71,4.711c0.137,0.136,0.314,0.203,0.494,0.203c0.178,0,0.355-0.067,0.492-0.203c0.273-0.273,0.273-0.715,0-0.986l-4.711-4.711l4.711-4.711C16.172,4.759,16.172,4.317,15.898,4.045z"></path>
+            </svg>
+            </a>
+            <!-- close modal -->
+
+            <div class="modal-content">
+                <span id="groupId" style="display: none;"></span>
+                <h3 id="groupinfo-title"></h3>
+                <h3 id="groupinfo-description"></h3>
+
+                <button id="group-join-btn" onclick="javascript:joinGroupBtn();">가입</button>
+
+
+
+            </div>
+            <!-- content -->
+
+        </div>
+        <!-- modal -->
+    </div>
+    <!-- overlay -->
+
+    <!-- community -->
+
+    <!-- analytics -->
+    <div id="analytics" style="display: none;">
+        <header>
+            <h3>분석</h3>
+        </header>
+
+        <div class="container">
+
+            <div class="cards">
+                <div class="card-item">
+                    <div class="card-info">
+                        <h2 class="card-title">Exploring around</h2>
+                        <p class="card-intro">Far far away, behind the word mountains, far from the countries Vokalia and Consonantia, there live the blind texts.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- analytics -->
+
+    <!-- settings -->
+    <div id="settings" style="display: none;">
+        <header>
+            <h3>설정</h3>
+        </header>
+
+        <div class="container">
+            <div class="cards">
+                <div class="card-item">
+                    <div class="card-info">
+                        <div class="unlogin-profile">
+                            <a href="login.html">
+                                <h2 class="card-title">로그인이 필요해요 ></h2>
+                            </a>
+                            <p class="card-intro">서비스를 이용하려면 로그인해주세요 :)</p>
+                        </div>
+                        <div class="login-profile" style="display:none;">
+                            <h2 class="card-title" id="nickname-profile"></h2>
+                            <p class="card-intro" id="email-profile"></p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- settings -->
+
+    <div class="tabs">
+        <!-- TAB 1 -->
+        <input type="radio" name="tab" id="tab-01" checked onclick="javascript:changeTab(0);" />
+        <label for="tab-01">
+          <div class="icon">
+            <span class="detail"></span>
+            <span class="glass"></span>
+            <span class="background"></span>
+          </div>
+        </label>
+        <!-- TAB 2 -->
+        <input type="radio" name="tab" id="tab-02" onclick="javascript:changeTab(1);" />
+        <label for="tab-02">
+          <div class="icon">
+            <span class="detail"></span>
+            <span class="glass"></span>
+            <span class="background"></span>
+          </div>
+        </label>
+        <!-- TAB 3 -->
+        <input type="radio" name="tab" id="tab-03" onclick="javascript:changeTab(2);" />
+        <label for="tab-03">
+          <div class="icon">
+            <span class="detail"></span>
+            <span class="glass"></span>
+            <span class="background"></span>
+          </div>
+        </label>
+        <!-- TAB 4 -->
+        <input type="radio" name="tab" id="tab-04" onclick="javascript:changeTab(3);" />
+        <label for="tab-04">
+          <div class="icon">
+            <span class="detail"></span>
+            <span class="glass"></span>
+            <span class="background"></span>
+          </div>
+        </label>
+    </div>
+
+
+    <!-- SVG -->
+    <svg xmlns="http://www.w3.org/2000/svg" height="0" width="0">
+        <clipPath id="path-icon-01">
+          <path d="M25.182 26.601A4.844 4.844 0 0121.762 28H4.838C2.166 28 0 25.85 0 23.197V11.014A3.464 3.464 0 011.354 8.35l9.125-7.305a4.336 4.336 0 015.529-.1l9.338 7.405a3.462 3.462 0 011.254 2.663v12.195c0 1.273-.51 2.493-1.418 3.392z"/>
+        </clipPath>
+        <clipPath id="path-detail-01">
+          <rect width="11.657" height="2.743" x="7.2" y="20.914" rx="1.371"/>
+        </clipPath>
+        <clipPath id="path-icon-02">
+            <path d="M28 14c0 7.732-6.268 14-14 14S0 21.732 0 14C0 6.27 6.268 0 14 0s14 6.27 14 14z"/>
+          </clipPath>
+          <clipPath id="path-detail-02">
+            <path d="M19.404 9.044l-2.268 7.168a.912.912 0 01-.616.617l-7.14 2.239c-.476.155-.938-.308-.784-.784l2.24-7.182a.935.935 0 01.616-.616l7.168-2.24a.629.629 0 01.784.798"/>
+          </clipPath>
+        <clipPath id="path-icon-03">
+          <path d="M20.076 0H7.938C3.192 0 0 3.332 0 8.288v11.438C0 24.668 3.192 28 7.938 28h12.138C24.822 28 28 24.668 28 19.726V8.288C28 3.332 24.822 0 20.076 0z"/>
+        </clipPath>
+        <clipPath id="path-detail-03">
+          <path d="M21.325 11.52l-4.001 5.164a1.034 1.034 0 01-1.478.184l-3.84-3.012-3.46 4.475a1.035 1.035 0 01-1.908-.603 1.007 1.007 0 01.222-.639l4.136-5.335a1.035 1.035 0 011.465-.197l3.841 3.024 3.373-4.339a1.022 1.022 0 011.453-.209c.452.354.54 1.003.197 1.463v.025z"/>
+        </clipPath>
+        <clipPath id="path-icon-04">
+          <path d="M20.076 0H7.938C3.192 0 0 3.332 0 8.288v11.438C0 24.668 3.192 28 7.938 28h12.138C24.822 28 28 24.668 28 19.726V8.288C28 3.332 24.822 0 20.076 0z"/>
+        </clipPath>
+        <clipPath id="path-detail-04">
+          <path d="M6.19 13.833a1.62 1.62 0 001.615 1.615 1.62 1.62 0 001.615-1.615c0-.888-.727-1.613-1.615-1.613s-1.614.725-1.614 1.613zm7.644 1.615a1.62 1.62 0 01-1.615-1.614c0-.888.726-1.613 1.615-1.613.888 0 1.614.725 1.614 1.613a1.62 1.62 0 01-1.614 1.614zm6.027 0a1.62 1.62 0 01-1.614-1.614c0-.888.726-1.613 1.614-1.613.888 0 1.601.725 1.601 1.613s-.713 1.615-1.6 1.615z"/>
+        </clipPath>
+        
+      </svg>
+    <script>
+        function changeTab(tabNum) {
+            switch (tabNum) {
+                case 0:
+                    $('#main').fadeIn();
+                    $('#community').hide();
+                    $('#analytics').hide();
+                    $('#settings').hide();
+                    break;
+                case 1:
+                    $('#main').hide();
+                    $('#community').fadeIn();
+                    $('#analytics').hide();
+                    $('#settings').hide();
+                    break;
+                case 2:
+                    $('#main').hide();
+                    $('#community').hide();
+                    $('#analytics').fadeIn();
+                    $('#settings').hide();
+                    break;
+                case 3:
+                    $('#main').hide();
+                    $('#community').hide();
+                    $('#analytics').hide();
+                    $('#settings').fadeIn();
+                    break;
+            }
+        }
+    </script>
+
 </body>
 
-</html>
-<script src="https://code.jquery.com/jquery-2.2.1.min.js"></script>
-<script type="module" src="home.js"></script>
 <script>
-    function startMeet() {
-        var id = document.getElementById('roomID').value;
-        if (id && id.length == 6) {
-            location.href = '/' + id;
-        } else {
-            render('warning', '올바른 회의 ID를 입력하세요.', 3000);
+    var userid = '';
+    var useremail = null;
+    var username = null;
+    const todayDate = new Date().toISOString();
+
+
+    // Initialize Firebase
+    var config = {
+        apiKey: "AIzaSyBSfxqNJ3oqKOy2ttFR7SfTHsgZnu3HFsE",
+        authDomain: "gongbang-5cf69.firebaseapp.com",
+        projectId: "gongbang-5cf69",
+        storageBucket: "gongbang-5cf69.appspot.com",
+        messagingSenderId: "550274824511",
+        appId: "1:550274824511:web:7dd4da4ab49c394b213b8a",
+        measurementId: "G-YM600EEXBL",
+        databaseURL: "https://gongbang-5cf69-default-rtdb.firebaseio.com"
+
+    };
+    firebase.initializeApp(config);
+
+    // Get a reference to the database service
+    var database = firebase.database();
+    var joinedClubId_forInit = '';
+
+    var leadsRef = database.ref('users/' + userid);
+    leadsRef.on('value', function(snapshot) {
+        var cnt = 0;
+        var userInfo_ForGroup = [];
+        snapshot.forEach(function(childSnapshot) {
+            var childData = childSnapshot.val();
+            userInfo_ForGroup[cnt] = childData;
+            cnt++;
+        });
+        userInfo_ForGroup.filter((a) => a);
+        joinedClubId_forInit = userInfo_ForGroup[2]; //현재 가입된 그룹 id 저장(없으면 none)
+    });
+
+    $.ajax({
+        type: "GET",
+        url: "../auth/profile",
+        success: function(result) {
+            if (result == "unlogin") {
+                $('.login-profile').hide();
+                $('.unlogin-profile').show();
+                $('#nickname-hello').html('안녕');
+                location.href = 'login.html'
+            } else {
+                userid = result.id;
+                username = result.nickname;
+                useremail = result.email;
+                $('.login-profile').show();
+                $('.unlogin-profile').hide();
+                $('#nickname-profile').html(username);
+                $('#nickname-hello').html(username);
+                $('#email-profile').html(useremail);
+                firebase.database().ref('users/' + userid + '/').update({
+                    id: userid,
+                    nickname: username,
+                    email: useremail,
+                    lastSession: moment(todayDate).format('YYYYMMDD'),
+                    todayProgress: 0
+                });
+                if (joinedClubId_forInit != 'none') {} else {
+                    firebase.database().ref('users/' + userid + '/joinedClub').set('none'); //클럽 가입되어 있지 않으면 none으로 초기화
+                }
+
+            }
         }
-
-
-    }
-
-    function newMeet() {
-        var al = "abcdefghijklmnopqrstuvwxyxABCDEFGHIJKLMNOPQRSTUVWXYZ";
-        var result = "";
-
-        while (result.length < 6) {
-            result += "";
-            result += al[Math.floor(Math.random() * al.length)];
-        }
-        console.log(result);
-        location.href = '/' + result;
-    }
-
-    function randomItem(e) {
-        return e[Math.floor(Math.random() * e.length)]
-    }
-
-    var e = new Array("새로운", "두근대는", "신나는", "재미있는", "설레는")
-    document.getElementById('txt-change').innerHTML = (randomItem(e));
-
-
-    // data
-    var clear;
-    var msgDuration = 3000;
-    var $msgSuccess = 'Great job! Well done :)';
-    var $msgDanger = 'Careful with that!';
-    var $msgWarning = 'Try that again and see what happens';
-    var $msgInfo = 'This is a friendly reminder';
-    // cache DOM
-    var $msg = $('.msg');
-    var $btnSuccess = $('.btn-success');
-    var $btnDanger = $('.btn-danger');
-    var $btnWarning = $('.btn-warning');
-    var $btnInfo = $('.btn-info');
-
-    // render message
-    function render(type, message, duration) {
-
-        msgDuration = duration;
-        hide();
-
-        switch (type) {
-            case 'success':
-                $msg.addClass('msg-success active').text(message);
-                break;
-            case 'danger':
-                $msg.addClass('msg-danger active').text(message);
-                break;
-            case 'warning':
-                $msg.addClass('msg-warning active').text(message);
-                break;
-            case 'info':
-                $msg.addClass('msg-info active').text(message);
-                break;
-        }
-        timer()
-    }
-
-    function timer() {
-        clearTimeout(clear);
-        clear = setTimeout(function() {
-            hide();
-        }, msgDuration)
-    }
-
-    function hide() {
-        $msg.removeClass('msg-success msg-danger msg-warning msg-info active');
-    }
+    });
 </script>
+<script src="js/main.js"></script>
+<script src="js/club.js" defer></script>
+
+</html>
